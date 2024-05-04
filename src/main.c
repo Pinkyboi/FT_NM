@@ -1,7 +1,6 @@
 #include "ft_nm.h"
 #include <stdio.h>
 
-
 void *map_file(char *file_name)
 {
     struct stat file_stat;
@@ -14,8 +13,6 @@ void *map_file(char *file_name)
         return (NULL);
     return (file);
 }
-
-#define ELF_ID 0x464c457f
 
 char *get_section_name_by_index(char *sections_name, int section_index)
 {
@@ -51,7 +48,7 @@ void nm_64(void *file)
     Elf64_Shdr* ssymtab = get_shdr_by_name(elf_header, ".symtab");
 
     char *strtab = (void *)elf_header + sstrtab->sh_offset;
-    Elf64_Sym*  symbol_head  = (void *)elf_header + ssymtab->sh_offset;
+    Elf64_Sym* symbol_head  = (void *)elf_header + ssymtab->sh_offset;
     for (int i = 0; i < ssymtab->sh_size / sizeof(Elf64_Sym); i++)
     {
         if (symbol_head[i].st_name)
@@ -74,14 +71,11 @@ int main(int argc, char **argv)
         return (1);
     }
     file = map_file(argv[1]);
-    if (file)
+    if (file && *(int *)(file) == ELF_ID)
     {
-        if (*(int *)(file) == ELF_ID)
-        {
-            if (((unsigned char *)file)[EI_CLASS] == ELFCLASS64)
-                nm_64(file);
-            else if (((unsigned char *)file)[EI_CLASS] == ELFCLASS32)
-                printf("32 bit yet\n");
-        }
+        if (((unsigned char *)file)[EI_CLASS] == ELFCLASS64)
+            nm_64(file);
+        if (((unsigned char *)file)[EI_CLASS] == ELFCLASS32)
+            printf("no 32 bit yet\n");
     }
 }

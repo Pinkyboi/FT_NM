@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <string.h>
 
+#define ELF_ID 0x464c457f
 
 
 #endif
