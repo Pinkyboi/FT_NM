@@ -1,81 +1,83 @@
-#include "ft_nm.h"
 #include <stdio.h>
+#include <errno.h>
+#include <sys/stat.h>
+#include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <elf.h>
+#include "ft_nm.h"
 
-void *map_file(char *file_name)
+
+#define ELF_ID 0x464c457f
+
+int error(int return_code, char *target, char *message)
 {
-    struct stat file_stat;
-    void        *file;
-    int         fd;
+    if (target)
+        printf("%s", target);
+    if (message)
+        printf(": %s\n", message);
+    else if (message)
+        printf("%s\n", message);
+    return return_code;
+}
+
+int open_file(char *file_name, struct stat *st)
+{
+    int rt;
+    int fd;
 
     fd = open(file_name, O_RDONLY);
-    fstat(fd, &file_stat);
-    if ((file = mmap(NULL, file_stat.st_size, PROT_READ, MAP_PRIVATE, fd, 0)) == MAP_FAILED)
-        return (NULL);
-    return (file);
-}
-
-char *get_section_name_by_index(char *sections_name, int section_index)
-{
-    for (int i = 0; i < section_index; i++)
-        sections_name = sections_name + strlen(sections_name) + 1;
-    return (sections_name);
-}
-
-#include <string.h>
-
-Elf64_Shdr* get_shdr_by_name(Elf64_Ehdr* elf_header, char *name)
-{
-    Elf64_Shdr* section_header;
-    Elf64_Shdr* strtab_sh;
-
-    section_header = (void *)elf_header + elf_header->e_shoff;
-    strtab_sh      = &section_header[elf_header->e_shstrndx];
-
-    for (int i = 0; i < elf_header->e_shnum; ++i)
+    if (fd == -1)
     {
-        char *section_name = (void *)elf_header + strtab_sh->sh_offset + section_header[i].sh_name;
-        if (!strcmp(section_name, name))
-            return (&section_header[i]);
+        if (errno == EACCES)
+            return error(-1, file_name, "Permission denied.");
+        return error(-1, file_name, "No such file or directory.");
     }
-    return (NULL);
+    rt = fstat(fd, st);
+    if (rt == -1)
+        return error(-1, file_name, "Error encountered while checking file stats.");
+    if (S_ISDIR(st->st_mode))
+        return error(-1, file_name, "Is a directory.");
+    return fd;
 }
 
-void nm_64(void *file)
-{
-    Elf64_Ehdr* elf_header = file;
-
-    Elf64_Shdr* sstrtab = get_shdr_by_name(elf_header, ".strtab");
-    Elf64_Shdr* ssymtab = get_shdr_by_name(elf_header, ".symtab");
-
-    char *strtab = (void *)elf_header + sstrtab->sh_offset;
-    Elf64_Sym* symbol_head  = (void *)elf_header + ssymtab->sh_offset;
-    for (int i = 0; i < ssymtab->sh_size / sizeof(Elf64_Sym); i++)
-    {
-        if (symbol_head[i].st_name)
-        {
-            if (symbol_head[i].st_value)
-                printf("%016x %s\n", symbol_head[i].st_value, strtab + symbol_head[i].st_name);
-            else
-                printf("%16c %s\n", ' ', strtab + symbol_head[i].st_name);
-        }
-    }
-}
 
 int main(int argc, char **argv)
 {
     void *file;
+    struct stat st;
+    int fd;
 
     if (argc != 2)
     {
         printf("Usage: ./ft_nm <file>\n");
-        return (1);
+        return 1;
     }
-    file = map_file(argv[1]);
-    if (file && *(int *)(file) == ELF_ID)
+
+    fd = open_file(argv[1], &st);
+    if (fd == -1)
+        return errno;
+    file = mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+    if (file == MAP_FAILED)
+    {
+        close(fd);
+        return errno;
+    }
+
+    if (memcmp(file, "\x7f""ELF", 4) == 0)
     {
         if (((unsigned char *)file)[EI_CLASS] == ELFCLASS64)
             nm_64(file);
-        if (((unsigned char *)file)[EI_CLASS] == ELFCLASS32)
-            printf("no 32 bit yet\n");
+        else if (((unsigned char *)file)[EI_CLASS] == ELFCLASS32)
+            nm_32(file);
     }
+    else
+    {
+        printf("Not a valid ELF file\n");
+    }
+
+    munmap(file, st.st_size);
+    close(fd);
+    return 0;
 }

@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "string.h": "c",
+        "elf-knowledge.h": "c"
+    }
+}

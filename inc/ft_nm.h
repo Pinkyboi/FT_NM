@@ -10,5 +10,7 @@
 
 #define ELF_ID 0x464c457f
 
+void nm_64(void *file);
+void nm_32(void *file);
 
 #endif
