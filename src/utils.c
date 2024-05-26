@@ -1,6 +1,6 @@
 #include "ft_nm.h"
 
-void* int_to_hex_string(unsigned long long value, unsigned short byte_number) {
+void* int_to_hex_string(unsigned long long value, unsigned short byte_number, char type) {
     const char *hex_digits = "0123456789abcdef";
     int num_chars = byte_number * 2; // Each byte is represented by 2 hex digits
     char *buffer = (char *)malloc((num_chars + 1) * sizeof(char)); // +1 for the null terminator
@@ -8,9 +8,9 @@ void* int_to_hex_string(unsigned long long value, unsigned short byte_number) {
         return NULL;
     for (int i = 0; i < num_chars; i++)
         buffer[i] = ' ';
-    buffer[num_chars] = '\0';
-    if (!value)
+    if (!(type == 't' || type == 'T') && ! value)
         return buffer;
+    buffer[num_chars] = '\0';
     for (int i = num_chars - 1; i >= 0; --i) {
         buffer[i] = hex_digits[value & 0xF];
         value >>= 4;
@@ -20,7 +20,7 @@ void* int_to_hex_string(unsigned long long value, unsigned short byte_number) {
 
 static void print_symbol(unsigned long long addr, unsigned short addr_size, const char sym_type, char *sym_name)
 {
-    char *addr_value = int_to_hex_string(addr, addr_size);
+    char *addr_value = int_to_hex_string(addr, addr_size, sym_type);
     write(1, addr_value, (addr_size * 2));
     write(1, " ", 1);
     write(1, &sym_type, 1);
