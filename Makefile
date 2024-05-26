@@ -9,7 +9,7 @@ SRC_PATH = ./src/
 OBJ_PATH = ./obj/
 INC_PATH = ./inc/
 
-SRC_NAME =	main.c nm64.c nm32.c
+SRC_NAME =	main.c nm64.c nm32.c utils.c mini_libft.c
 
 DEPS = $(INC_PATH)/ft_nm.h
 
@@ -18,8 +18,7 @@ OBJ_NAME = $(SRC_NAME:.c=.o)
 SRC = $(addprefix $(SRC_PATH),$(SRC_NAME))
 OBJ = $(addprefix $(OBJ_PATH),$(OBJ_NAME))
 
-FLAGS = -g -Wall -Wextra -Werror -I $(INC_PATH)
-FLAGS = -I $(INC_PATH)
+FLAGS = -Wall -Wextra -Werror -I $(INC_PATH)
 
 all: $(NAME)
 
